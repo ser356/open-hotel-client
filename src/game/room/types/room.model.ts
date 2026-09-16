@@ -6,4 +6,6 @@ export interface RoomModel {
   door?: PointLike
   heightmap: Matrix<number>
   roomUserDictionary: Record<string, IUserModel>
+  currentUserId: string
+  onWalk: (x: number, y: number) => void
 }

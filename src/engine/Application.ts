@@ -56,7 +56,7 @@ export class Application extends PIXI.Application {
   }
 
   tickerFallback() {
-    this.worker = new Worker('./worker.js')
+    this.worker = new Worker(new URL('worker.js', document.baseURI))
     this.worker.addEventListener('message', e => {
       if (e.data === 'ticker') {
         this.ticker.update()

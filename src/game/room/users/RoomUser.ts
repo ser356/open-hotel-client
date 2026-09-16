@@ -131,6 +131,13 @@ export class RoomUser {
 
   moveTo(position: IsoPoint) {
     this.teleTween.stop()
+    this.model.x = position.x
+    this.model.y = position.y
+    this.model.z = position.z
+    if (!this.container) {
+      this.iso.set(position.x, position.y, position.z)
+      return
+    }
     this.teleTween = new Tween.Tween({
       x: this.iso.x,
       y: this.iso.y,

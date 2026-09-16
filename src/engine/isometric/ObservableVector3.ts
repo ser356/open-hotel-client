@@ -4,9 +4,6 @@ import { Vector3Interface } from './IVector3'
 type IsoPointListener = (newPoint: Vector3Interface, oldPoint: Vector3Interface) => any
 
 export class ObservableVector3 extends Vector3 {
-  private _x: number
-  private _y: number
-  private _z: number
   private _cb: IsoPointListener
 
   constructor(cb: IsoPointListener, x: number = 0, y: number = 0, z: number = 0) {
@@ -18,15 +15,21 @@ export class ObservableVector3 extends Vector3 {
 
     Object.defineProperties(this, {
       _x: {
+        configurable: true,
         enumerable: false,
+        writable: true,
         value: x,
       },
       _y: {
+        configurable: true,
         enumerable: false,
+        writable: true,
         value: y,
       },
       _z: {
+        configurable: true,
         enumerable: false,
+        writable: true,
         value: z,
       },
       _cb: {
@@ -35,37 +38,37 @@ export class ObservableVector3 extends Vector3 {
         writable: false,
         value: cb,
       },
+      x: {
+        configurable: true,
+        enumerable: true,
+        get: () => this._x,
+        set: (value: number) => {
+          const oldPoint = this.clone()
+          this._x = value
+          this.notify(this, oldPoint)
+        },
+      },
+      y: {
+        configurable: true,
+        enumerable: true,
+        get: () => this._y,
+        set: (value: number) => {
+          const oldPoint = this.clone()
+          this._y = value
+          this.notify(this, oldPoint)
+        },
+      },
+      z: {
+        configurable: true,
+        enumerable: true,
+        get: () => this._z,
+        set: (value: number) => {
+          const oldPoint = this.clone()
+          this._z = value
+          this.notify(this, oldPoint)
+        },
+      },
     })
-  }
-
-  get x() {
-    return this._x
-  }
-
-  set x(value: number) {
-    const oldPoint = this.clone()
-    this._x = value
-    this.notify(this, oldPoint)
-  }
-
-  get y() {
-    return this._y
-  }
-
-  set y(value: number) {
-    const oldPoint = this.clone()
-    this._y = value
-    this.notify(this, oldPoint)
-  }
-
-  get z() {
-    return this._z
-  }
-
-  set z(value: number) {
-    const oldPoint = this.clone()
-    this._z = value
-    this.notify(this, oldPoint)
   }
 
   private notify(newPoint: Vector3Interface, oldPoint: Vector3Interface) {

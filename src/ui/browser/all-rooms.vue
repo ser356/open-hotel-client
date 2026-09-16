@@ -3,11 +3,11 @@
     <px-scrollview>
       <ul class="room-list">
         <li class="room-list-category">
-          <div class="room-list-header">Popular Rooms</div>
+          <div class="room-list-header">Salas populares</div>
           <ul class="room-list">
             <li
               v-for="(room, i) in popularRooms"
-              :key="i"
+              :key="room.id"
               class="room-list-item"
               @click="selectRoom(room)"
             >
@@ -18,71 +18,54 @@
             </li>
           </ul>
         </li>
-        <li class="room-list-category">
-          <div class="room-list-header">Batendo um papo</div>
-          <ul class="room-list">
-            <li v-for="i in 10" :key="i" class="room-list-item">
-              <div class="count-users">123</div>
-              <p class="room-list-item-title">Room {{ i }}</p>
-            </li>
-          </ul>
+        <li v-if="loading" class="room-list-status">Cargando salas…</li>
+        <li v-else-if="error" class="room-list-status">
+          No se pudieron cargar las salas.
+          <button type="button" @click="loadRooms">Reintentar</button>
         </li>
-        <li class="room-list-category">
-          <div class="room-list-header">Jogos e eventos</div>
-          <ul class="room-list">
-            <li v-for="i in 10" :key="i" class="room-list-item">
-              <div class="count-users">123</div>
-              <p class="room-list-item-title">Room {{ i }}</p>
-            </li>
-          </ul>
-        </li>
-        <li class="room-list-category">
-          <div class="room-list-header">Festas</div>
-          <ul class="room-list">
-            <li v-for="i in 20" :key="i" class="room-list-item">
-              <div class="count-users">123</div>
-              <p class="room-list-item-title">Room {{ i }}</p>
-            </li>
-          </ul>
-        </li>
+        <li v-else-if="!popularRooms.length" class="room-list-status">Todavía no hay salas.</li>
       </ul>
     </px-scrollview>
   </div>
 </template>
 
 <script>
-import { RoomProvider } from '../../game/room/room.provider'
-import demoRooms from '../../../schema/demo/room-list'
-import { Matrix } from '../../engine/lib/util/Matrix'
+import { hotelNetwork } from '../../network/NetworkClient'
 
 export default {
   data () {
     return {
-      popularRooms: demoRooms.popular
+      popularRooms: [],
+      loading: true,
+      error: false,
+      unsubscribes: [],
     }
   },
+  created () {
+    this.loadRooms()
+    this.unsubscribes = [
+      hotelNetwork.on('room:state', this.loadRooms),
+      hotelNetwork.on('room:join', this.loadRooms),
+      hotelNetwork.on('user:leave', this.loadRooms),
+    ]
+  },
+  beforeDestroy () {
+    this.unsubscribes.forEach(unsubscribe => unsubscribe())
+  },
   methods: {
-    async selectRoom (room) {
-      /**
-       * @type {RoomProvider}
-       */
-      const roomProvider = await this.$injets.get(RoomProvider)
-      await roomProvider.create({
-        roomUserDictionary: {
-          abc: {
-            id: '1',
-            name: 'user_1',
-            look: 'hd-180-1.hr-110-61.ch-210-66.lg-280-110.sh-305-62',
-            action: 'std',
-            direction: 2,
-            head_direction: 2,
-            x: 64,
-            y: 32,
-            z: 8
-          },
-        },
-        heightmap: Matrix.fromLegacyString(room.heightmap)
-      })
+    async loadRooms () {
+      this.loading = true
+      this.error = false
+      try {
+        this.popularRooms = await hotelNetwork.listRooms()
+      } catch {
+        this.error = true
+      } finally {
+        this.loading = false
+      }
+    },
+    selectRoom (room) {
+      hotelNetwork.joinRoom(room.id)
     }
   }
 }
@@ -133,6 +116,21 @@ export default {
     font-weight: bold;
     margin-right: 0.5em;
     width: 43.42px;
+  }
+
+  &-status {
+    color: #3A7392;
+    padding: 1em 0;
+
+    button {
+      margin-left: 0.5em;
+      border: 1px solid #3A7392;
+      border-radius: 4px;
+      padding: 0.25em 0.5em;
+      background: #FFF;
+      color: #234D64;
+      cursor: pointer;
+    }
   }
 }
 </style>

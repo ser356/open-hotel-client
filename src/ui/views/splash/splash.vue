@@ -6,9 +6,15 @@
         <img class="splash-frame splash-frame-image" src="./images/splash_image.png" />
         <img class="splash-frame" src="./images/splash_frame_2.png" />
       </div>
-      <h2>Siga o pato amarelo</h2>
-      <oh-progress :value="progress" />
-      <h4>{{ progress.toFixed(0) }}%</h4>
+      <h2>Sigue al pato amarillo</h2>
+      <template v-if="error">
+        <p role="alert">No se pudieron cargar los recursos del hotel.</p>
+        <button type="button" @click="loadAssets">Reintentar</button>
+      </template>
+      <template v-else>
+        <oh-progress :value="progress" />
+        <h4>{{ progress.toFixed(0) }}%</h4>
+      </template>
     </div>
   </div>
 </template>
@@ -21,30 +27,38 @@ export default {
   data() {
     return {
       progress: 0,
+      loading: false,
+      error: false,
     }
   },
   methods: {
     async loadAssets() {
-      const loader = await this.$injets.get(Loader)
-      // Download assets
-      await loader
-        .add({
-          figuremap: 'figuremap.json',
-          figuredata: 'figuredata.json',
-          partsets: 'HabboAvatarPartSets.json',
-          avatarActions: 'HabboAvatarActions.json',
-          geometry: 'HabboAvatarGeometry.json',
-          animations: 'HabboAvatarAnimations.json',
-          effectmap: 'effectmap.json',
-        })
-        .progress((loaded, total) => {
-          this.progress = (loaded / total) * 100
-        })
-        .wait()
-
-      this.$emit('splash-ready', loader)
-
-      this.$router.replace({ name: 'game' })
+      if (this.loading) return
+      this.loading = true
+      this.error = false
+      try {
+        const loader = await this.$injets.get(Loader)
+        await loader
+          .add({
+            figuremap: 'figuremap.json',
+            figuredata: 'figuredata.json',
+            partsets: 'HabboAvatarPartSets.json',
+            avatarActions: 'HabboAvatarActions.json',
+            geometry: 'HabboAvatarGeometry.json',
+            animations: 'HabboAvatarAnimations.json',
+            effectmap: 'effectmap.json',
+          })
+          .progress((loaded, total) => {
+            this.progress = (loaded / total) * 100
+          })
+          .wait()
+        this.$emit('splash-ready', loader)
+        this.$router.replace({ name: 'game' })
+      } catch {
+        this.error = true
+      } finally {
+        this.loading = false
+      }
     },
   },
   created() {
@@ -71,6 +85,21 @@ export default {
 
   h4 {
     margin: 8px;
+  }
+
+  p {
+    margin: 16px;
+  }
+
+  button {
+    border: 2px solid #FFF;
+    border-radius: 6px;
+    padding: 8px 16px;
+    background: #3A7392;
+    color: #FFF;
+    font: inherit;
+    font-weight: bold;
+    cursor: pointer;
   }
 
   .splash-frame {

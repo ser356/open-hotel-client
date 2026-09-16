@@ -2,7 +2,7 @@
   <canvas ref="canvas" style="image-rendering:pixelated"></canvas>
 </template>
 <script>
-import { Application } from 'pixi.js-legacy'
+import { Application } from 'pixi.js'
 export default {
   data () {
     return {

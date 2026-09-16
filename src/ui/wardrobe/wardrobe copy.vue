@@ -52,7 +52,7 @@ import Vue from 'vue'
 import OhPalette from './palette'
 import { Loader } from '../../engine/loader'
 import { ApplicationProvider } from '../../game/pixi/application.provider'
-import { Sprite } from 'pixi.js-legacy'
+import { Sprite } from 'pixi.js'
 import { HumanImager } from '../../game/imager/human.imager'
 import { ImagerModule } from '../../game/imager/imager.module'
 export default {

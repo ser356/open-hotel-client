@@ -2,7 +2,7 @@ import { Container } from 'pixi.js'
 import { Provider } from 'injets'
 import { Matrix } from '../../engine/lib/util/Matrix'
 import { RoomImager } from '../imager/room.imager'
-import { IsoPointObject } from '../../engine/lib/IsoPoint'
+import { IsoPoint, IsoPointObject } from '../../engine/lib/IsoPoint'
 import { RoomModel } from './types/room.model'
 import { AvatarImager } from '../imager/avatar/human-imager'
 import { RoomUser } from './users/RoomUser'
@@ -19,6 +19,8 @@ export class RoomEngine {
   public floorRenderer: FloorRenderer
   public wallRenderer: WallRenderer
   private users = new Map<string, RoomUser>()
+  private currentUserId: string
+  private onWalk: (x: number, y: number) => void
 
   constructor(
     public readonly appProvider: ApplicationProvider,
@@ -28,9 +30,8 @@ export class RoomEngine {
     this.appProvider.app.ticker.add((delta) => this.tick(delta))
   }
 
-  // TODO: GET CURRENT USER
   get currentUser () {
-    return this.users.get('abc')
+    return this.users.get(this.currentUserId)
   }
 
   calcZIndex({ x, y, z }: IsoPointObject, priority = 1) {
@@ -38,7 +39,8 @@ export class RoomEngine {
   }
 
   destroy () {
-    this.container.removeChild()
+    this.users.forEach(user => user.destroy())
+    this.container.removeChildren()
     this.users.clear()
   }
 
@@ -48,14 +50,33 @@ export class RoomEngine {
   putFurni() { }
 
   putUsers(userOptionsDictionary: Record<string, IUserModel>) {
-    this.users.clear()
-
     return Object.entries(userOptionsDictionary)
-      .map(([userId, userModel]) => {
-        const roomUser = new RoomUser(userModel, this)
-        this.users.set(userId, roomUser)
-        return this.addUserSprite(roomUser)
-      })
+      .map(([userId, userModel]) => this.putUser(userId, userModel))
+  }
+
+  async putUser(userId: string, userModel: IUserModel) {
+    this.removeUser(userId)
+    const roomUser = new RoomUser(userModel, this)
+    this.users.set(userId, roomUser)
+    await this.addUserSprite(roomUser)
+  }
+
+  moveUser(userId: string, userModel: IUserModel) {
+    const user = this.users.get(userId)
+    if (!user) return
+    user.moveTo(new IsoPoint(userModel.x, userModel.y, userModel.z))
+  }
+
+  removeUser(userId: string) {
+    const user = this.users.get(userId)
+    if (!user) return
+    user.destroy()
+    if (user.container) this.container.removeChild(user.container)
+    this.users.delete(userId)
+  }
+
+  requestWalk(x: number, y: number) {
+    this.onWalk(x, y)
   }
 
   updateUsersZIndex() {
@@ -71,7 +92,11 @@ export class RoomEngine {
 
   private async addUserSprite(roomUser: RoomUser) {
     await roomUser.initSprite()
-
+    if (this.users.get(roomUser.model.id) !== roomUser) {
+      roomUser.destroy()
+      return
+    }
+    roomUser.setPosition(roomUser.iso)
     this.container.addChild(roomUser.container)
   }
 
@@ -89,6 +114,8 @@ export class RoomEngine {
   async init(roomModel: RoomModel) {
     this.container = new Container()
     this.heightmap = roomModel.heightmap
+    this.currentUserId = roomModel.currentUserId
+    this.onWalk = roomModel.onWalk
     this.container.sortableChildren = true
     this.renderWalls(roomModel)
     this.renderFloor()

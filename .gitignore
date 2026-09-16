@@ -6,3 +6,5 @@ docker/db
 docker/nginx/log
 dist
 yarn-error.log
+/graft/
+.graph/sessions.db

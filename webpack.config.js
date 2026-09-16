@@ -4,20 +4,24 @@ const webpack = require('webpack')
 const VueLoaderPlugin = require('vue-loader/lib/plugin')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 
+const resourcesBase = process.env.RESOURCES_BASE || env.parsed?.RESOURCES_BASE
+if (!resourcesBase) throw new Error('RESOURCES_BASE is required')
 
 /** @type import('webpack').Configuration */
 const config = {
-  mode: 'development',
+  mode: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   resolve: {
     extensions: ['.js', '.jsx', '.ts', '.tsx', '.vue', '.json'],
     alias: {
-      vue$: 'vue/dist/vue.esm.js',
+      vue$: 'vue/dist/vue.runtime.esm.js',
     },
   },
   entry: './src/index.ts',
   output: {
     path: path.resolve(__dirname, 'dist'),
     filename: 'bundle.js',
+    publicPath: '/habbo/',
+    clean: true,
   },
   module: {
     rules: [
@@ -44,20 +48,20 @@ const config = {
       },
       {
         test: /\.css$/,
-        use: ['vue-style-loader', 'css-loader'],
+        use: [
+          'vue-style-loader',
+          'css-loader',
+        ],
       },
       {
         test: /\.(jgpe?g|png|gif|mp3|wav|ogg)$/,
-        loader: 'file-loader'
+        type: 'asset/resource'
       },
     ],
   },
   plugins: [
     new webpack.DefinePlugin({
-      "process.env": Object.entries(env.parsed).reduce((acc, [key, value]) => {
-        acc[key] = JSON.stringify(value)
-        return acc
-      }, {})
+      'process.env.RESOURCES_BASE': JSON.stringify(resourcesBase),
     }),
     new VueLoaderPlugin(),
     new HtmlWebpackPlugin({
@@ -66,10 +70,12 @@ const config = {
       template: './public/index.html',
     }),
   ],
-  devtool: '#source-map',
+  devtool: process.env.NODE_ENV === 'production' ? false : '#source-map',
   devServer: {
-    contentBase: './public',
-    disableHostCheck: true,
+    static: {
+      directory: path.join(__dirname, 'public'),
+    },
+    host: '127.0.0.1',
   }
 }
 

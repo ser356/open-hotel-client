@@ -7,12 +7,10 @@ import { Application } from '../../engine/Application'
 import { ApplicationProvider } from '../../game/pixi/application.provider'
 import { RoomProvider } from '../../game/room/room.provider'
 import { Matrix } from '../../engine/lib/util/Matrix'
-import { Sprite, Graphics } from 'pixi.js-legacy'
 import { Loader } from '../../engine/loader'
 import { gameRef } from '../../game'
-import { ModuleRef } from 'injets'
-import { GameModule } from '../../game/game.module'
-import { RoomModule } from '../../game/room/room.module'
+import { hotelNetwork, RoomStatePayload } from '../../network/NetworkClient'
+import { IUserModel } from '../../game/users/types'
 
 @Component({
   name: 'GameView'
@@ -25,6 +23,7 @@ export default class GameView extends Vue {
 
   isLoaded = false
   isMounted = false
+  unsubscribe: Array<() => void> = []
 
   $el: HTMLCanvasElement
 
@@ -36,34 +35,32 @@ export default class GameView extends Vue {
       return
     }
 
-    this.startGame()
+    if (hotelNetwork.roomState) this.renderRoom(hotelNetwork.roomState)
   }
 
-  async startGame() {
+  created() {
+    this.unsubscribe.push(
+      hotelNetwork.on<RoomStatePayload>('room:state', state => this.renderRoom(state)),
+      hotelNetwork.on<{ user: IUserModel }>('room:join', ({ user }) => this.room.putUser(user.id, user)),
+      hotelNetwork.on<{ user: IUserModel }>('user:walk', ({ user }) => this.room.moveUser(user.id, user)),
+      hotelNetwork.on<{ userId: string }>('user:leave', ({ userId }) => this.room.removeUser(userId)),
+    )
+  }
+
+  beforeDestroy() {
+    this.unsubscribe.forEach(unsubscribe => unsubscribe())
+  }
+
+  async renderRoom(state: RoomStatePayload) {
+    const roomUserDictionary = state.users.reduce((users, user) => {
+      users[user.id] = user
+      return users
+    }, {} as Record<string, IUserModel>)
     await this.room.create({
-      roomUserDictionary: {
-        abc: {
-          id: '1',
-          name: 'user_1',
-          look: 'hd-180-1.hr-110-61.ch-210-66.lg-280-110.sh-305-62',
-          action: 'std',
-          direction: 2,
-          head_direction: 2,
-          x: 64,
-          y: 32,
-          z: 8
-        },
-      },
-      heightmap: Matrix.fromLegacyString(`
-        000000000
-        000000000
-        000000000
-        000000000
-        000000000
-        000000000
-        000000000
-        000000000
-      `),
+      currentUserId: state.selfId,
+      heightmap: Matrix.fromLegacyString(state.room.heightmap),
+      onWalk: (x, y) => hotelNetwork.walk(x, y),
+      roomUserDictionary,
     })
   }
 }

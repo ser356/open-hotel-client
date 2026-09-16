@@ -10,7 +10,38 @@ export interface IsoPointObject {
 export type IsoPointLike = Vector3 | IsoPointObject | [number, number, number]
 
 export class Vector3 implements Vector3Interface {
-  constructor(public x: number = 0, public y: number = 0, public z: number = 0) {}
+  declare x: number
+  declare y: number
+  declare z: number
+  protected _x: number
+  protected _y: number
+  protected _z: number
+
+  constructor(x: number = 0, y: number = 0, z: number = 0) {
+    Object.defineProperties(this, {
+      _x: { configurable: true, writable: true, value: x },
+      _y: { configurable: true, writable: true, value: y },
+      _z: { configurable: true, writable: true, value: z },
+      x: {
+        configurable: true,
+        enumerable: true,
+        get: () => this._x,
+        set: (value: number) => { this._x = value },
+      },
+      y: {
+        configurable: true,
+        enumerable: true,
+        get: () => this._y,
+        set: (value: number) => { this._y = value },
+      },
+      z: {
+        configurable: true,
+        enumerable: true,
+        get: () => this._z,
+        set: (value: number) => { this._z = value },
+      },
+    })
+  }
 
   static from(point: IsoPointLike | PIXI.Point, copy = true): Vector3 {
     if (point instanceof Vector3) return copy ? point.clone() : point
@@ -36,7 +67,7 @@ export class Vector3 implements Vector3Interface {
     return new Vector3(this.x, this.y, this.z)
   }
 
-  copyTo(point: Vector3Interface): Vector3 {
+  copyTo(point: Vector3Interface): Vector3Interface {
     return point.set(this.x, this.y, this.z)
   }
 

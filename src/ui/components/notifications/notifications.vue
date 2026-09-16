@@ -114,28 +114,6 @@ export default {
         setTimeout(() => this.dispose(notification), notification.duration || 5000),
       )
     },
-    mouseOut(e) {
-      console.log(e)
-    },
-  },
-  mounted() {
-    setTimeout(() => this.add({ body: 'Opa' }), 2000)
-
-    window.addEventListener('keydown', e => {
-      this.add({
-        icon: require('./icon.png'),
-        title: 'Foo',
-        body: `Bar "${this.lastId}".`,
-        duration: 10000,
-        actions: [
-          { id: 'Y', text: 'Yes' },
-          { id: 'N', text: 'No' },
-        ],
-        onAction(action) {
-          console.log('Resposta do usuário!', action)
-        },
-      })
-    })
   },
 }
 </script>

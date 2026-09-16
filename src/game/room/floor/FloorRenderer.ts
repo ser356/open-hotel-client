@@ -72,7 +72,7 @@ export class FloorRenderer {
       this.roomEngine.container.addChild(tile)
 
       tile.addListener('pointertap', () => {
-        this.roomEngine.currentUser.moveTo(position)
+        this.roomEngine.requestWalk(x, y)
       })
       return tile
     })
